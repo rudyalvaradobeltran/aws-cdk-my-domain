@@ -13,6 +13,7 @@ jobs:
     env:
       CDK_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
       CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+      DOMAIN: ${{ vars.DOMAIN }}
     permissions:
       contents: read
       id-token: write
