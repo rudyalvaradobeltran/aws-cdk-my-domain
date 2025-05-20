@@ -31,7 +31,7 @@ const acmStack = new ACMStack(app, 'ACMStack', {
 
 // Create a CloudFront stack for each website
 const cloudfrontStacks = websites.map(website => {
-  return new CloudfrontStack(app, `${website.prefix}CloudfrontStack`, {
+  return new CloudfrontStack(app, `${website.name}CloudfrontStack`, {
     env: {
       account: process.env.CDK_DEFAULT_ACCOUNT,
       region: process.env.CDK_DEFAULT_REGION,
@@ -44,7 +44,7 @@ const cloudfrontStacks = websites.map(website => {
 
 // Create a Route53 stack for each website
 websites.forEach((website, index) => {
-  new Route53Stack(app, `${website.prefix}Route53Stack`, {
+  new Route53Stack(app, `${website.name}Route53Stack`, {
     env: {
       account: process.env.CDK_DEFAULT_ACCOUNT,
       region: process.env.CDK_DEFAULT_REGION,
