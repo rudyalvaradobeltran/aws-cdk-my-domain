@@ -26,12 +26,12 @@ jobs:
           
       - name: Install dependencies
         run: |
-          cd src
+          cd src/simple-routing-webapp
           npm install
           
       - name: Build Vite project
         run: |
-          cd src
+          cd src/simple-routing-webapp
           npm run build
           
       - name: Configure AWS credentials
