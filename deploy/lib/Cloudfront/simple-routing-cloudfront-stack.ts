@@ -13,11 +13,11 @@ import { S3Origin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as path from 'path';
-import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 
 interface SimpleRoutingCloudfrontStackProps extends StackProps {
   domainName: string;
-  certificate: acm.ICertificate;
+  certificate: ICertificate;
 }
 
 export class SimpleRoutingCloudfrontStack extends Stack {
