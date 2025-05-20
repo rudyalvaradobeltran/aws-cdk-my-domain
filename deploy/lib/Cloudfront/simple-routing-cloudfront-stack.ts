@@ -50,7 +50,7 @@ export class SimpleRoutingCloudfrontStack extends cdk.Stack {
 
     // Deploy the built files to S3
     new s3deploy.BucketDeployment(this, 'SimpleRoutingWebappDeploy', {
-      sources: [s3deploy.Source.asset(path.join(__dirname, '../../../src/dist'))],
+      sources: [s3deploy.Source.asset(path.join(__dirname, '../../../src/simple-routing-webapp/dist'))],
       destinationBucket: simpleRoutingWebappBucket,
       distribution,
       distributionPaths: ['/*'],
