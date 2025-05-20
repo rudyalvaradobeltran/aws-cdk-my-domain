@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { SimpleRoutingCloudfrontStack } from '../lib/Cloudfront/simple-routing-cloudfront-stack';
-import { Route53Stack } from '../lib/Route53/route53-stack';
-import { ACMStack } from '../lib/ACM/acm-stack';
+import { CloudfrontStack } from '../lib/cloudfront-stack';
+import { Route53Stack } from '../lib/route53-stack';
+import { ACMStack } from '../lib/acm-stack';
+import { IWebsiteList } from '../interfaces/interfaces';
 
 const app = new cdk.App();
 
@@ -13,30 +14,45 @@ if (!domainName) {
   throw new Error('DOMAIN environment variable is required');
 }
 
+// Define websites
+const websites: IWebsiteList = [
+  { name: 'SimpleRoutingWebapp', prefix: 'simple', folder: 'simple-routing-webapp' }
+];
+
+// Create an ACM stack
 const acmStack = new ACMStack(app, 'ACMStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'us-east-1', // ACM certificates for CloudFront must be in us-east-1
   },
-  domainName: domainName
+  domainName,
+  websites
 });
 
-const cloudfrontStack = new SimpleRoutingCloudfrontStack(app, 'SimpleRoutingCloudfrontStack', {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
-  },
-  domainName,
-  certificate: acmStack.certificate,
+// Create a CloudFront stack for each website
+const cloudfrontStacks = websites.map(website => {
+  return new CloudfrontStack(app, `${website.prefix}CloudfrontStack`, {
+    env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: process.env.CDK_DEFAULT_REGION,
+    },
+    domainName,
+    certificate: acmStack.certificates.get(website.prefix)!,
+    website: website
+  });
 });
 
-const route53Stack = new Route53Stack(app, 'Route53Stack', {
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
-  },
-  distribution: cloudfrontStack.distribution,
-  domainName,
-  hostedZone: acmStack.hostedZone,
-  certificate: acmStack.certificate
+// Create a Route53 stack for each website
+websites.forEach((website, index) => {
+  new Route53Stack(app, `${website.prefix}Route53Stack`, {
+    env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: process.env.CDK_DEFAULT_REGION,
+    },
+    distribution: cloudfrontStacks[index].distribution,
+    domainName,
+    hostedZone: acmStack.hostedZone,
+    certificate: acmStack.certificates.get(website.prefix)!,
+    website
+  });
 });
