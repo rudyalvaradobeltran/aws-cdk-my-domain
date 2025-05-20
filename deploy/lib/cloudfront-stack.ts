@@ -71,7 +71,7 @@ export class CloudfrontStack extends Stack {
 
     // Deploy the built files to S3
     new BucketDeployment(this, `${website.name}Deploy`, {
-      sources: [Source.asset(path.join(__dirname, `../../../src/${website.folder}/dist`))],
+      sources: [Source.asset(path.join(__dirname, `../../src/${website.folder}/dist`))],
       destinationBucket: bucket,
       distribution: this.distribution,
       distributionPaths: ['/*'],
