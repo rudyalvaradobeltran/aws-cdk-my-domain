@@ -25,14 +25,30 @@ jobs:
         with:
           node-version: '18'
           
-      - name: Install dependencies
+      - name: Install dependencies (Simple Routing Webapp)
         run: |
           cd src/simple-routing-webapp
           npm install
           
-      - name: Build Vite project
+      - name: Build Vite project (Simple Routing Webapp)
         run: |
           cd src/simple-routing-webapp
+          npm run build
+
+      - name: Install dependencies (Weighted Routing Webapp)
+        run: |
+          cd src/weighted-routing-webapp/weighted-routing-webapp-70
+          npm install
+          cd ..
+          cd weighted-routing-webapp-30
+          npm install
+          
+      - name: Build Vite projects (Weighted Routing Webapp)
+        run: |
+          cd src/weighted-routing-webapp/weighted-routing-webapp-70
+          npm run build
+          cd ..
+          cd weighted-routing-webapp-30
           npm run build
           
       - name: Configure AWS credentials
