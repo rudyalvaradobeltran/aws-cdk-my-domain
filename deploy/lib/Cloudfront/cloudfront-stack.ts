@@ -14,7 +14,7 @@ import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as path from 'path';
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
-import { IWebsite } from '../interfaces/interfaces';
+import { IWebsite } from '../../interfaces/interfaces';
 
 interface CloudfrontStackProps extends StackProps {
   domainName: string;
@@ -71,7 +71,7 @@ export class CloudfrontStack extends Stack {
 
     // Deploy the built files to S3
     new BucketDeployment(this, `${website.name}Deploy`, {
-      sources: [Source.asset(path.join(__dirname, `../../src/${website.folder}/dist`))],
+      sources: [Source.asset(path.join(__dirname, `../../../src/${website.folder}/dist`))],
       destinationBucket: bucket,
       distribution: this.distribution,
       distributionPaths: ['/*'],

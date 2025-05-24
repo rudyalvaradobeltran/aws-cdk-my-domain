@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { CloudfrontStack } from '../lib/cloudfront-stack';
-import { Route53Stack } from '../lib/route53-stack';
-import { ACMStack } from '../lib/acm-stack';
+import { CloudfrontStack } from '../lib/Cloudfront/cloudfront-stack';
+import { Route53Stack } from '../lib/Route53/route53-stack';
+import { ACMStack } from '../lib/ACM/acm-stack';
 import { IWebsiteList } from '../interfaces/interfaces';
 
 const app = new cdk.App();
@@ -16,7 +16,9 @@ if (!domainName) {
 
 // Define websites
 const websites: IWebsiteList = [
-  { name: 'SimpleRoutingWebapp', prefix: 'simple', folder: 'simple-routing-webapp' }
+  { type: 'SimpleRouting', name: 'SimpleRoutingWebapp', prefix: 'simple', folder: 'simple-routing-webapp' },
+  { type: 'WeightedRouting', name: 'WeightedRoutingWebapp70', prefix: 'weighted', folder: 'weighted-routing-webapp/weighted-routing-webapp-70', weight: 70 },
+  { type: 'WeightedRouting', name: 'WeightedRoutingWebapp30', prefix: 'weighted', folder: 'weighted-routing-webapp/weighted-routing-webapp-30', weight: 30 }
 ];
 
 // Create an ACM stack

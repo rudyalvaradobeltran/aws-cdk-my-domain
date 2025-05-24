@@ -2,7 +2,7 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { DnsValidatedCertificate, ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone, IHostedZone } from 'aws-cdk-lib/aws-route53';
-import { IWebsiteList } from '../interfaces/interfaces';
+import { IWebsiteList } from '../../interfaces/interfaces';
 
 interface ACMStackProps extends StackProps {
   domainName: string;
