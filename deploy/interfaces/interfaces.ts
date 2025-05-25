@@ -1,9 +1,17 @@
+export const routingPolicyType = {
+  simple: "simple",
+  weighted: "weighted"
+} as const;
+
+export type RoutingPolicyType = typeof routingPolicyType[keyof typeof routingPolicyType];
+
 export interface IWebsite {
-  type: string;
   name: string;
-  prefix: string;
   folder: string;
   weight?: number;
 }
 
-export interface IWebsiteList extends Array<IWebsite>{};
+export interface IWebsiteSet {
+  routingPolicyType: RoutingPolicyType;
+  websites: Array<IWebsite>;
+}

@@ -2,11 +2,11 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { DnsValidatedCertificate, ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone, IHostedZone } from 'aws-cdk-lib/aws-route53';
-import { IWebsiteList } from '../../interfaces/interfaces';
+import { IWebsiteSet } from '../../interfaces/interfaces';
 
 interface ACMStackProps extends StackProps {
   domainName: string;
-  websites: IWebsiteList;
+  websiteSets: Array<IWebsiteSet>;
 }
 
 export class ACMStack extends Stack {
@@ -17,7 +17,7 @@ export class ACMStack extends Stack {
   constructor(scope: Construct, id: string, props: ACMStackProps) {
     super(scope, id, props);
 
-    const { domainName, websites } = props;
+    const { domainName, websiteSets } = props;
     this.certificates = new Map();
 
     // Get the hosted zone for your domain
@@ -26,9 +26,9 @@ export class ACMStack extends Stack {
     });
     
     // Create a certificate for all websites
-    const allDomains = websites.flatMap(website => [
-      `${website.prefix}.${domainName}`,
-      `www.${website.prefix}.${domainName}`
+    const allDomains = websiteSets.flatMap(website => [
+      `${website.routingPolicyType}.${domainName}`,
+      `www.${website.routingPolicyType}.${domainName}`
     ]);
 
     this.certificate = new DnsValidatedCertificate(this, 'SiteCertificate', {
@@ -39,8 +39,8 @@ export class ACMStack extends Stack {
     });
 
     // Store individual certificates for each website
-    websites.forEach(website => {
-      this.certificates.set(website.prefix, this.certificate);
+    websiteSets.forEach(website => {
+      this.certificates.set(website.routingPolicyType, this.certificate);
     });
   }
 }

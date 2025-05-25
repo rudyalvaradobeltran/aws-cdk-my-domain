@@ -14,11 +14,12 @@ import { BucketDeployment, Source } from 'aws-cdk-lib/aws-s3-deployment';
 import { RemovalPolicy } from 'aws-cdk-lib';
 import * as path from 'path';
 import { ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
-import { IWebsite } from '../../interfaces/interfaces';
+import { IWebsite, routingPolicyType, RoutingPolicyType } from '../../interfaces/interfaces';
 
 interface CloudfrontStackProps extends StackProps {
   domainName: string;
   certificate: ICertificate;
+  routingPolicyType: RoutingPolicyType
   website: IWebsite;
 }
 
@@ -57,7 +58,7 @@ export class CloudfrontStack extends Stack {
         originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
         responseHeadersPolicy: ResponseHeadersPolicy.SECURITY_HEADERS,
       },
-      domainNames: [`${website.prefix}.${domainName}`, `www.${website.prefix}.${domainName}`],
+      domainNames: [`${routingPolicyType}.${domainName}`, `www.${routingPolicyType}.${domainName}`],
       certificate,
       defaultRootObject: 'index.html',
       errorResponses: [
