@@ -59,7 +59,9 @@ export class CloudfrontStack extends Stack {
         responseHeadersPolicy: ResponseHeadersPolicy.SECURITY_HEADERS,
       },
       certificate,
-      domainNames: [`${props.routingPolicyType}.${props.domainName}`],
+      domainNames: props.routingPolicyType === routingPolicyType.simple 
+        ? [`${props.routingPolicyType}.${props.domainName}`]
+        : undefined,
       defaultRootObject: 'index.html',
       errorResponses: [
         {
