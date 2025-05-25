@@ -58,7 +58,6 @@ export class CloudfrontStack extends Stack {
         originRequestPolicy: OriginRequestPolicy.CORS_S3_ORIGIN,
         responseHeadersPolicy: ResponseHeadersPolicy.SECURITY_HEADERS,
       },
-      domainNames: [`${routingPolicyType}.${domainName}`, `www.${routingPolicyType}.${domainName}`],
       certificate,
       defaultRootObject: 'index.html',
       errorResponses: [

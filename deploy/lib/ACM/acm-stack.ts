@@ -1,6 +1,6 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { DnsValidatedCertificate, ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
+import { Certificate, CertificateValidation, ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone, IHostedZone } from 'aws-cdk-lib/aws-route53';
 import { IWebsiteSet } from '../../interfaces/interfaces';
 
@@ -26,16 +26,10 @@ export class ACMStack extends Stack {
     });
     
     // Create a certificate for all websites
-    const allDomains = websiteSets.flatMap(website => [
-      `${website.routingPolicyType}.${domainName}`,
-      `www.${website.routingPolicyType}.${domainName}`
-    ]);
-
-    this.certificate = new DnsValidatedCertificate(this, 'SiteCertificate', {
-      domainName: allDomains[0], // Primary domain
-      subjectAlternativeNames: allDomains.slice(1), // All other domains
-      hostedZone: this.hostedZone,
-      region: props.env?.region, // CloudFront requires certificates in us-east-1
+    this.certificate = new Certificate(this, 'Certificate', {
+      domainName: `*.${domainName}`, // This covers all subdomains
+      subjectAlternativeNames: [domainName], // Also cover the root domain
+      validation: CertificateValidation.fromDns(this.hostedZone),
     });
 
     // Store individual certificates for each website
