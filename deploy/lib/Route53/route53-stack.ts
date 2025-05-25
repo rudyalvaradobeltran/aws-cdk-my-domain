@@ -51,8 +51,8 @@ export class Route53Stack extends Stack {
         port: 80,
         resourcePath: "/",
         fullyQualifiedDomainName: props.distribution.distributionDomainName,
-        requestInterval: 300,
-        failureThreshold: 2
+        requestInterval: 30,
+        failureThreshold: 3
       }
     });
   }
