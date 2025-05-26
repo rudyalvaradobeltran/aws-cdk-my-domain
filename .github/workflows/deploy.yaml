@@ -14,6 +14,7 @@ jobs:
       CDK_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
       CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
       DOMAIN: ${{ vars.DOMAIN }}
+      ALARM_EMAIL: ${{ vars.ALARM_EMAIL }}
     permissions:
       contents: read
       id-token: write
@@ -33,22 +34,6 @@ jobs:
       - name: Build Vite project (Simple Routing Webapp)
         run: |
           cd src/simple-routing-webapp
-          npm run build
-
-      - name: Install dependencies (Weighted Routing Webapp)
-        run: |
-          cd src/weighted-routing-webapp/weighted-routing-webapp-70
-          npm install
-          cd ..
-          cd weighted-routing-webapp-30
-          npm install
-          
-      - name: Build Vite projects (Weighted Routing Webapp)
-        run: |
-          cd src/weighted-routing-webapp/weighted-routing-webapp-70
-          npm run build
-          cd ..
-          cd weighted-routing-webapp-30
           npm run build
           
       - name: Configure AWS credentials

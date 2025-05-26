@@ -1,51 +1,49 @@
 import { Stack } from "aws-cdk-lib";
-import { StackProps } from "aws-cdk-lib/core";
+import { StackProps, Duration } from "aws-cdk-lib/core";
 import { Construct } from "constructs";
-import { aws_route53 as route53 } from "aws-cdk-lib";
-import { aws_cloudfront as cloudfront } from "aws-cdk-lib";
-import { aws_certificatemanager } from "aws-cdk-lib";
+import { IHostedZone, RecordTarget, CfnHealthCheck, ARecord } from "aws-cdk-lib/aws-route53";
+import { Distribution } from "aws-cdk-lib/aws-cloudfront";
+import { ICertificate } from "aws-cdk-lib/aws-certificatemanager";
 import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
-import { IWebsite, routingPolicyType, RoutingPolicyType } from "../../interfaces/interfaces";
+import { Topic } from "aws-cdk-lib/aws-sns";
+import { EmailSubscription } from "aws-cdk-lib/aws-sns-subscriptions";
+import { Alarm, Metric, TreatMissingData } from "aws-cdk-lib/aws-cloudwatch";
+import { SnsAction } from "aws-cdk-lib/aws-cloudwatch-actions";
 
 export interface Route53StackProps extends StackProps {
-  distribution: cloudfront.Distribution;
+  distribution: Distribution;
   domainName: string;
-  hostedZone: route53.IHostedZone;
-  certificate: aws_certificatemanager.ICertificate;
-  routingPolicyType: RoutingPolicyType;
-  website: IWebsite;
+  hostedZone: IHostedZone;
+  certificate: ICertificate;
+  alarmEmail?: string; // Optional email for notifications
 }
 
 export class Route53Stack extends Stack {
   constructor(scope: Construct, id: string, props: Route53StackProps) {
     super(scope, id, props);
 
-    const recordName = `${props.routingPolicyType}.${props.domainName}`;
+    const recordName = `simple.${props.domainName}`;
 
-    if (props.routingPolicyType === routingPolicyType.simple) {
-      // Create a simple A record for the distribution
-      new route53.ARecord(this, `${props.website.name}-Record`, {
-        zone: props.hostedZone,
-        recordName,
-        target: route53.RecordTarget.fromAlias(
-          new CloudFrontTarget(props.distribution)
-        ),
-      });
-    } else if (props.routingPolicyType === routingPolicyType.weighted) {
-      // Create a weighted A record for the distribution
-      new route53.ARecord(this, `${props.website.name}WeightedRecord`, {
-        zone: props.hostedZone,
-        recordName,
-        target: route53.RecordTarget.fromAlias(
-          new CloudFrontTarget(props.distribution)
-        ),
-        weight: props.website.weight,
-        setIdentifier: `${props.website.name}-${props.website.weight}`,
-      });
-    }
+    // Create a simple A record for the distribution
+    new ARecord(this, 'SimpleRoutingWebappRecord', {
+      zone: props.hostedZone,
+      recordName,
+      target: RecordTarget.fromAlias(
+        new CloudFrontTarget(props.distribution)
+      ),
+    });
 
+    // Create a simple www A record for the distribution
+    new ARecord(this, 'SimpleRoutingWebappWWWRecord', {
+      zone: props.hostedZone,
+      recordName: `www.${recordName}`,
+      target: RecordTarget.fromAlias(
+        new CloudFrontTarget(props.distribution)
+      ),
+    });
+    
     // Create a health check for monitoring
-    new route53.CfnHealthCheck(this, `${props.website.name}HealthCheck`, {
+    const healthCheck = new CfnHealthCheck(this, 'SimpleRoutingWebappHealthCheck', {
       healthCheckConfig: {
         type: "HTTP",
         port: 80,
@@ -55,5 +53,35 @@ export class Route53Stack extends Stack {
         failureThreshold: 3
       }
     });
+
+    // Create an SNS topic for notifications
+    const alarmTopic = new Topic(this, 'SimpleRoutingWebappAlarmTopic', {
+      displayName: 'Simple Routing Webapp Health Check Alarms',
+    });
+
+    // Add email subscription if email is provided
+    if (props.alarmEmail) {
+      alarmTopic.addSubscription(
+        new EmailSubscription(props.alarmEmail)
+      );
+    }
+
+    // Create a CloudWatch alarm for the health check
+    new Alarm(this, 'SimpleRoutingWebappHealthCheckAlarm', {
+      metric: new Metric({
+        namespace: 'AWS/Route53',
+        metricName: 'HealthCheckStatus',
+        dimensionsMap: {
+          HealthCheckId: healthCheck.attrHealthCheckId,
+        },
+        statistic: 'Minimum',
+        period: Duration.minutes(1),
+      }),
+      threshold: 1,
+      evaluationPeriods: 1,
+      treatMissingData: TreatMissingData.BREACHING,
+      alarmDescription: 'Alarm if the health check fails',
+      alarmName: 'SimpleRoutingWebappHealthCheckAlarm',
+    }).addAlarmAction(new SnsAction(alarmTopic));
   }
 }

@@ -2,11 +2,9 @@ import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { Certificate, CertificateValidation, ICertificate } from 'aws-cdk-lib/aws-certificatemanager';
 import { HostedZone, IHostedZone } from 'aws-cdk-lib/aws-route53';
-import { IWebsiteSet } from '../../interfaces/interfaces';
 
 interface ACMStackProps extends StackProps {
   domainName: string;
-  websiteSets: Array<IWebsiteSet>;
 }
 
 export class ACMStack extends Stack {
@@ -17,7 +15,7 @@ export class ACMStack extends Stack {
   constructor(scope: Construct, id: string, props: ACMStackProps) {
     super(scope, id, props);
 
-    const { domainName, websiteSets } = props;
+    const { domainName } = props;
     this.certificates = new Map();
 
     // Get the hosted zone for your domain
@@ -32,9 +30,7 @@ export class ACMStack extends Stack {
       validation: CertificateValidation.fromDns(this.hostedZone),
     });
 
-    // Store individual certificates for each website
-    websiteSets.forEach(website => {
-      this.certificates.set(website.routingPolicyType, this.certificate);
-    });
+    // Store the certificate
+    this.certificates.set('simple', this.certificate);
   }
 }
