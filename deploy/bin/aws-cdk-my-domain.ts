@@ -16,13 +16,29 @@ if (!domainName) {
   throw new Error('DOMAIN environment variable is required');
 }
 
-// Create a VPC stack
-const VPCStack = new VpcStack(app, 'VPCStack');
+// Define regions
+const regions = ['us-east-1', 'us-west-2'];
 
-// Create an EC2 stack (2 instances)
-const ec2Stack = new Ec2Stack(app, 'EC2Stack', {
-  VPC: VPCStack.VPC,
-  instances: ['InstanceOne', 'InstanceTwo']
+// Create stacks for each region
+regions.forEach((region, index) => {
+  // Create a VPC stack
+  const vpcStack = new VpcStack(app, `VPCStack-${region}`, {
+    env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: region,
+    },
+  });
+
+  // Create an EC2 stack (2 instances)
+  const ec2Stack = new Ec2Stack(app, `EC2Stack-${region}`, {
+    env: {
+      account: process.env.CDK_DEFAULT_ACCOUNT,
+      region: region,
+    },
+    VPC: vpcStack.VPC,
+    instances: ['InstanceA', 'InstanceB'],
+    region: region
+  });
 });
 
 /*

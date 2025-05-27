@@ -28,16 +28,17 @@ import * as fs from 'fs';
 interface Ec2StackProps extends StackProps {
   VPC: Vpc;
   instances: Array<string>;
+  region: string;
 }
 
 export class Ec2Stack extends Stack {
   constructor(scope: Construct, id: string, props: Ec2StackProps) {
     super(scope, id, props);
 
-    const { VPC, instances } = props;
+    const { VPC, instances, region } = props;
 
     // Create a security group for the EC2 instances
-    const instanceSecurityGroup = new SecurityGroup(this, 'WebServerSG', {
+    const instanceSecurityGroup = new SecurityGroup(this, `WebServerSG-${region}`, {
       vpc: VPC,
       description: 'Security group for web servers',
       allowAllOutbound: true,
@@ -51,7 +52,7 @@ export class Ec2Stack extends Stack {
     );
 
     // Create a security group for the ALB
-    const albSecurityGroup = new SecurityGroup(this, 'AlbSG', {
+    const albSecurityGroup = new SecurityGroup(this, `AlbSG-${region}`, {
       vpc: VPC,
       description: 'Security group for ALB',
       allowAllOutbound: true,
@@ -65,7 +66,7 @@ export class Ec2Stack extends Stack {
     );
 
     // Create an IAM role for the EC2 instances
-    const role = new Role(this, 'WebServerRole', {
+    const role = new Role(this, `WebServerRole-${region}`, {
       assumedBy: new ServicePrincipal('ec2.amazonaws.com'),
     });
 
@@ -86,7 +87,7 @@ export class Ec2Stack extends Stack {
 
     // Create EC2 instances in private subnets
     const instanceTargets = instances.map((instance) => {
-      const ec2Instance = new Instance(this, instance, {
+      const ec2Instance = new Instance(this, `${instance}-${region}`, {
         vpc: VPC,
         vpcSubnets: {
           subnetGroupName: 'PrivateSubnet',
@@ -106,7 +107,7 @@ export class Ec2Stack extends Stack {
     });
 
     // Create an Application Load Balancer
-    const alb = new ApplicationLoadBalancer(this, 'WebServerALB', {
+    const alb = new ApplicationLoadBalancer(this, `WebServerALB-${region}`, {
       vpc: VPC,
       internetFacing: true,
       securityGroup: albSecurityGroup,
@@ -117,7 +118,7 @@ export class Ec2Stack extends Stack {
     });
 
     // Create a target group
-    const targetGroup = new ApplicationTargetGroup(this, 'WebServerTargetGroup', {
+    const targetGroup = new ApplicationTargetGroup(this, `WebServerTargetGroup-${region}`, {
       vpc: VPC,
       port: 80,
       protocol: ApplicationProtocol.HTTP,
@@ -137,15 +138,15 @@ export class Ec2Stack extends Stack {
     });
 
     // Add a listener to the ALB
-    alb.addListener('HttpListener', {
+    alb.addListener(`HttpListener-${region}`, {
       port: 80,
       defaultAction: ListenerAction.forward([targetGroup]),
     });
 
     // Output the ALB DNS name
-    new CfnOutput(this, 'LoadBalancerDNS', {
+    new CfnOutput(this, `LoadBalancerDNS-${region}`, {
       value: alb.loadBalancerDnsName,
-      description: 'The DNS name of the load balancer',
+      description: `The DNS name of the load balancer in ${region}`,
     });
   }
 }
