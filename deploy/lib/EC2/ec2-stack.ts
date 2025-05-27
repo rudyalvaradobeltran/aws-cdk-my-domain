@@ -1,8 +1,7 @@
 import { Stack, StackProps } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { 
-  Vpc, 
-  SubnetType, 
+  Vpc,
   SecurityGroup,
   Peer,
   Port,
@@ -80,6 +79,7 @@ export class Ec2Stack extends Stack {
         role: role,
         userData: userData,
         userDataCausesReplacement: true,
+        associatePublicIpAddress: true,
       });
     });
   }
