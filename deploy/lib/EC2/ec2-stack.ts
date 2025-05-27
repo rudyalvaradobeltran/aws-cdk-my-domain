@@ -1,4 +1,4 @@
-import { Stack, StackProps } from 'aws-cdk-lib';
+import { Stack, StackProps, CfnOutput, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { 
   Vpc,
@@ -13,6 +13,15 @@ import {
   UserData,
 } from 'aws-cdk-lib/aws-ec2';
 import { Role, ServicePrincipal, ManagedPolicy } from 'aws-cdk-lib/aws-iam';
+import { 
+  ApplicationLoadBalancer,
+  ApplicationProtocol,
+  ApplicationTargetGroup,
+  TargetType,
+  ListenerAction,
+  IpAddressType
+} from 'aws-cdk-lib/aws-elasticloadbalancingv2';
+import { InstanceTarget } from 'aws-cdk-lib/aws-elasticloadbalancingv2-targets';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -28,17 +37,31 @@ export class Ec2Stack extends Stack {
     const { VPC, instances } = props;
 
     // Create a security group for the EC2 instances
-    const securityGroup = new SecurityGroup(this, 'WebServerSG', {
+    const instanceSecurityGroup = new SecurityGroup(this, 'WebServerSG', {
       vpc: VPC,
       description: 'Security group for web servers',
       allowAllOutbound: true,
     });
 
-    // Allow HTTP traffic from anywhere
-    securityGroup.addIngressRule(
+    // Allow HTTP traffic from ALB only
+    instanceSecurityGroup.addIngressRule(
       Peer.anyIpv4(),
       Port.tcp(80),
-      'Allow HTTP traffic'
+      'Allow HTTP traffic from ALB'
+    );
+
+    // Create a security group for the ALB
+    const albSecurityGroup = new SecurityGroup(this, 'AlbSG', {
+      vpc: VPC,
+      description: 'Security group for ALB',
+      allowAllOutbound: true,
+    });
+
+    // Allow HTTP traffic from anywhere to ALB
+    albSecurityGroup.addIngressRule(
+      Peer.anyIpv4(),
+      Port.tcp(80),
+      'Allow HTTP traffic from anywhere'
     );
 
     // Create an IAM role for the EC2 instances
@@ -61,26 +84,68 @@ export class Ec2Stack extends Stack {
     const userData = UserData.forLinux();
     userData.addCommands(userDataScript);
 
-    const publicSubnet = VPC.selectSubnets({
-      subnetGroupName: 'PublicSubnet',
-    }).subnets[0];
-
-    // Create EC2 instances in each private subnet
-    instances.forEach((instance) => {
-      new Instance(this, instance, {
+    // Create EC2 instances in private subnets
+    const instanceTargets = instances.map((instance) => {
+      const ec2Instance = new Instance(this, instance, {
         vpc: VPC,
-        vpcSubnets: { subnets: [publicSubnet] },
+        vpcSubnets: {
+          subnetGroupName: 'PrivateSubnet',
+        },
         instanceType: InstanceType.of(
           InstanceClass.T3,
           InstanceSize.MICRO
         ),
         machineImage: MachineImage.latestAmazonLinux2023(),
-        securityGroup: securityGroup,
+        securityGroup: instanceSecurityGroup,
         role: role,
         userData: userData,
         userDataCausesReplacement: true,
-        associatePublicIpAddress: true,
       });
+
+      return new InstanceTarget(ec2Instance);
+    });
+
+    // Create an Application Load Balancer
+    const alb = new ApplicationLoadBalancer(this, 'WebServerALB', {
+      vpc: VPC,
+      internetFacing: true,
+      securityGroup: albSecurityGroup,
+      vpcSubnets: {
+        subnetGroupName: 'PublicSubnet',
+      },
+      ipAddressType: IpAddressType.IPV4,
+    });
+
+    // Create a target group
+    const targetGroup = new ApplicationTargetGroup(this, 'WebServerTargetGroup', {
+      vpc: VPC,
+      port: 80,
+      protocol: ApplicationProtocol.HTTP,
+      targetType: TargetType.INSTANCE,
+      healthCheck: {
+        path: '/',
+        interval: Duration.seconds(30),
+        timeout: Duration.seconds(5),
+        healthyThresholdCount: 2,
+        unhealthyThresholdCount: 3,
+      },
+    });
+
+    // Add instances to the target group
+    instanceTargets.forEach(target => {
+      targetGroup.addTarget(target);
+    });
+
+    // Add a listener to the ALB
+    alb.addListener('HttpListener', {
+      port: 80,
+      defaultAction: ListenerAction.forward([targetGroup]),
+    });
+
+    // Output the ALB DNS name
+    new CfnOutput(this, 'LoadBalancerDNS', {
+      value: alb.loadBalancerDnsName,
+      description: 'The DNS name of the load balancer',
     });
   }
 }

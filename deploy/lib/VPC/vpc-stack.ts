@@ -28,6 +28,11 @@ export class VpcStack extends Stack {
           name: "PublicSubnet",
           subnetType: SubnetType.PUBLIC,
         },
+        {
+          cidrMask: 24,
+          name: "PrivateSubnet",
+          subnetType: SubnetType.PRIVATE_WITH_EGRESS,
+        },
       ],
     });
 
