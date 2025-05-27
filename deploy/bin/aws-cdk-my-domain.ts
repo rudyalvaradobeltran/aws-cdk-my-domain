@@ -4,6 +4,8 @@ import * as cdk from 'aws-cdk-lib';
 import { CloudfrontStack } from '../lib/Cloudfront/cloudfront-stack';
 import { Route53Stack } from '../lib/Route53/route53-stack';
 import { ACMStack } from '../lib/ACM/acm-stack';
+import { VpcStack } from '../lib/VPC/vpc-stack';
+import { Ec2Stack } from '../lib/EC2/ec2-stack';
 
 const app = new cdk.App();
 
@@ -14,6 +16,16 @@ if (!domainName) {
   throw new Error('DOMAIN environment variable is required');
 }
 
+// Create a VPC stack
+const VPCStack = new VpcStack(app, 'VPCStack');
+
+// Create an EC2 stack (2 instances)
+const ec2Stack = new Ec2Stack(app, 'EC2Stack', {
+  VPC: VPCStack.VPC,
+  instances: ['InstanceOne', 'InstanceTwo']
+});
+
+/*
 // Create an ACM stack
 const acmStack = new ACMStack(app, 'ACMStack', {
   env: {
@@ -44,3 +56,5 @@ new Route53Stack(app, `SimpleRoutingWebappRoute53Stack`, {
   certificate: acmStack.certificates.get('simple')!,
   alarmEmail
 });
+
+*/
